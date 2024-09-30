@@ -16,8 +16,8 @@
           if (result.status === 1) {
             node.parentNode.removeChild(node);
             console.log(result);
+            location.reload();
           }
-          location.reload();
         })
         .catch(function (err) {
           console.log(err);
