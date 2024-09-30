@@ -1,9 +1,13 @@
 from flask import Flask
 import sqlite3
-from flask import Flask, g
-
+from flask import Flask, g, render_template
+import os
+from . import config
 # configuration
-DATABASE = "flaskr.db"
+DATABASE = os.getenv("DATABASE")
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # create and initialize a new Flask app
 app = Flask(__name__)
@@ -42,8 +46,35 @@ def close_db(error):
         g.sqlite_db.close()
 
 @app.route("/")
-def hello():
-    return "Hello, World!"
+def index():
+    """Searches the database for entries, then displays them."""
+    db = get_db()
+    cur = db.execute('select * from entries order by id desc')
+    entries = cur.fetchall()
+    return render_template('index.html', entries=entries)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """User login/authentication/session management."""
+    error = None
+    if request.method == 'POST':
+        if request.form['username'] != app.config['USERNAME']:
+            error = 'Invalid username'
+        elif request.form['password'] != app.config['PASSWORD']:
+            error = 'Invalid password'
+        else:
+            session['logged_in'] = True
+            flash('You were logged in')
+            return redirect(url_for('index'))
+    return render_template('login.html', error=error)
+
+
+@app.route('/logout')
+def logout():
+    """User logout/authentication/session management."""
+    session.pop('logged_in', None)
+    flash('You were logged out')
+    return redirect(url_for('index'))
 
 
 if __name__ == "__main__":
