@@ -95,10 +95,13 @@ def delete_entry(post_id):
     """Delete post from database"""
     result = {'status': 0, 'message': 'Error'}
     try:
-        db = get_db()
-        db.execute('delete from entries where id=' + post_id)
-        db.commit()
-        result = {'status': 1, 'message': "Post Deleted"}
+        if session['logged_in']:
+            db = get_db()
+            db.execute('delete from entries where id=' + post_id)
+            db.commit()
+            result = {'status': 1, 'message': "Post Deleted"}
+        else:
+            result = {'status': 0, 'message': 'Error: Cannot delete, not logged in.'}
     except Exception as e:
         result = {'status': 0, 'message': repr(e)}
     return jsonify(result)
