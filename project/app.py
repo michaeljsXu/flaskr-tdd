@@ -27,7 +27,7 @@ with app.app_context():
 @app.route('/')
 def index():
     """Searches the database for entries, then displays them."""
-    entries = db.session.query(models.Post)
+    entries = db.session.query(models.Post).order_by(models.Post.id)
     return render_template('index.html', entries=entries)
 
 
