@@ -10,14 +10,13 @@ load_dotenv()
 app = Flask(__name__)
 
 # load the config
-basedir = Path(__file__).resolve().parent
-app.config["DATABASE"] = os.getenv("DATABASE")
+basedir = Path(__file__).parent.resolve()
 app.config["USERNAME"] = os.getenv("USERNAME")
 app.config["PASSWORD"] = os.getenv("PASSWORD")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = f'sqlite:///{Path(basedir).joinpath(app.config["DATABASE"])}'
+app.config["SQLALCHEMY_DATABASE_URI"] = f'sqlite:///{basedir.joinpath(os.getenv("DATABASE"))}'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-print(app.config["SQLALCHEMY_DATABASE_URI"])
+
 # connect to database
 db = SQLAlchemy(app)
 from project import models
@@ -83,5 +82,4 @@ def delete_entry(post_id):
 
 
 if __name__ == "__main__":
-    print(app.config["DATABASE"], app.config["USERNAME"], app.config["PASSWORD"])
     app.run()
