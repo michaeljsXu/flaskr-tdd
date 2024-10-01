@@ -4,17 +4,14 @@ from flask import Flask, g, render_template, request, session, flash, redirect, 
 import os
 from dotenv import load_dotenv
 load_dotenv()
-# configuration
-DATABASE = os.getenv("DATABASE")
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
-SECRET_KEY = os.getenv("SECRET_KEY")
-
 # create and initialize a new Flask app
 app = Flask(__name__)
 
 # load the config
-app.config.from_object(__name__)
+app.config["DATABASE"] = os.getenv("DATABASE")
+app.config["USERNAME"] = os.getenv("USERNAME")
+app.config["PASSWORD"] = os.getenv("PASSWORD")
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
 # connect to database
 def connect_db():
@@ -38,7 +35,7 @@ def get_db():
     if not hasattr(g, "sqlite_db"):
         g.sqlite_db = connect_db()
     return g.sqlite_db
-
+init_db()
 
 # close database connection
 @app.teardown_appcontext
