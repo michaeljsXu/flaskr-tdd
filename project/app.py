@@ -106,4 +106,5 @@ def delete_entry(post_id):
 
 
 if __name__ == "__main__":
+    print(app.config["DATABASE"], app.config["USERNAME"], app.config["PASSWORD"])
     app.run()
