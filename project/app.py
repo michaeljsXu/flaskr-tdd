@@ -1,55 +1,47 @@
 from flask import Flask
+from pathlib import Path
 import sqlite3
 from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort, jsonify
 import os
+from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 load_dotenv()
 # create and initialize a new Flask app
 app = Flask(__name__)
 
 # load the config
+basedir = Path(__file__).resolve().parent
 app.config["DATABASE"] = os.getenv("DATABASE")
 app.config["USERNAME"] = os.getenv("USERNAME")
 app.config["PASSWORD"] = os.getenv("PASSWORD")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-
+app.config["SQLALCHEMY_DATABASE_URI"] = f'sqlite:///{Path(basedir).joinpath(app.config["DATABASE"])}'
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # connect to database
-def connect_db():
-    """Connects to the database."""
-    rv = sqlite3.connect(app.config["DATABASE"])
-    rv.row_factory = sqlite3.Row
-    return rv
+db = SQLAlchemy(app)
+from project import models
+with app.app_context():
+    db.create_all()
+    db.session.commit()
 
-
-# create the database
-def init_db():
-    with app.app_context():
-        db = get_db()
-        with app.open_resource("schema.sql", mode="r") as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-
-# open database connection
-def get_db():
-    if not hasattr(g, "sqlite_db"):
-        g.sqlite_db = connect_db()
-    return g.sqlite_db
-init_db()
-
-# close database connection
-@app.teardown_appcontext
-def close_db(error):
-    if hasattr(g, "sqlite_db"):
-        g.sqlite_db.close()
-
-@app.route("/")
+@app.route('/')
 def index():
     """Searches the database for entries, then displays them."""
-    db = get_db()
-    cur = db.execute('select * from entries order by id desc')
-    entries = cur.fetchall()
+    entries = db.session.query(models.Post)
     return render_template('index.html', entries=entries)
+
+
+@app.route('/add', methods=['POST'])
+def add_entry():
+    """Adds new post to the database."""
+    if not session.get('logged_in'):
+        abort(401)
+    new_entry = models.Post(request.form['title'], request.form['text'])
+    db.session.add(new_entry)
+    db.session.commit()
+    flash('New entry was successfully posted')
+    return redirect(url_for('index'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -74,32 +66,16 @@ def logout():
     flash('You were logged out')
     return redirect(url_for('index'))
 
-@app.route('/add', methods=['POST'])
-def add_entry():
-    """Add new post to database."""
-    if not session.get('logged_in'):
-        abort(401)
-    db = get_db()
-    db.execute(
-        'insert into entries (title, text) values (?, ?)',
-        [request.form['title'], request.form['text']]
-    )
-    db.commit()
-    flash('New entry was successfully posted')
-    return redirect(url_for('index'))
 
-@app.route('/delete/<post_id>', methods=['GET'])
+@app.route('/delete/<int:post_id>', methods=['GET'])
 def delete_entry(post_id):
-    """Delete post from database"""
+    """Deletes post from database."""
     result = {'status': 0, 'message': 'Error'}
     try:
-        if session['logged_in']:
-            db = get_db()
-            db.execute('delete from entries where id=' + post_id)
-            db.commit()
-            result = {'status': 1, 'message': "Post Deleted"}
-        else:
-            result = {'status': 0, 'message': 'Error: Cannot delete, not logged in.'}
+        db.session.query(models.Post).filter_by(id=post_id).delete()
+        db.session.commit()
+        result = {'status': 1, 'message': "Post Deleted"}
+        flash('The entry was deleted.')
     except Exception as e:
         result = {'status': 0, 'message': repr(e)}
     return jsonify(result)
