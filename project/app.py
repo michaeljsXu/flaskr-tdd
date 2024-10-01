@@ -17,6 +17,7 @@ app.config["PASSWORD"] = os.getenv("PASSWORD")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = f'sqlite:///{Path(basedir).joinpath(app.config["DATABASE"])}'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+print(app.config["SQLALCHEMY_DATABASE_URI"])
 # connect to database
 db = SQLAlchemy(app)
 from project import models
