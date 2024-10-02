@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 load_dotenv()
 # create and initialize a new Flask app
+
 app = Flask(__name__)
 
 # load the config
@@ -20,9 +21,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # connect to database
 db = SQLAlchemy(app)
 from project import models
-with app.app_context():
-    db.create_all()
-    db.session.commit()
 
 @app.route('/')
 def index():
@@ -79,7 +77,6 @@ def delete_entry(post_id):
     except Exception as e:
         result = {'status': 0, 'message': repr(e)}
     return jsonify(result)
-
 
 if __name__ == "__main__":
     app.run()
