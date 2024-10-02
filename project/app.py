@@ -11,11 +11,13 @@ load_dotenv()
 app = Flask(__name__)
 
 # global config variables
+basedir = Path(__file__).parent.resolve()
 DATABASE = "flaskr.db"
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
+USERNAME = os.getenv("USERNAME_FLASK")
+PASSWORD = os.getenv("PASSWORD_FLASK")
+print(USERNAME, PASSWORD)
 SECRET_KEY = os.getenv("SECRET_KEY")
-SQLALCHEMY_DATABASE_URI = f'sqlite:///./{DATABASE}'
+SQLALCHEMY_DATABASE_URI = f'sqlite:///{basedir.joinpath(DATABASE)}'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 # load the config
 app.config.from_object(__name__)
