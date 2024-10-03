@@ -6,6 +6,7 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from dotenv import load_dotenv
+import psycopg2
 load_dotenv()
 # create and initialize a new Flask app
 
@@ -13,11 +14,15 @@ app = Flask(__name__)
 
 # global config variables
 basedir = Path(__file__).parent.resolve()
-DATABASE = os.getenv("DATABASE")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL.startswith("postgres"):
+    DATABASE_URL = f'sqlite:///{Path(basedir).joinpath(DATABASE_URL)}'
+
+# , f'sqlite:///{Path(basedir).joinpath(DATABASE_URL)}'
 USERNAME = os.getenv("USERNAME_FLASK")
 PASSWORD = os.getenv("PASSWORD_FLASK")
 SECRET_KEY = os.getenv("SECRET_KEY")
-SQLALCHEMY_DATABASE_URI = f'sqlite:///{basedir.joinpath(DATABASE)}'
+SQLALCHEMY_DATABASE_URI = DATABASE_URL
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 # load the config
 app.config.from_object(__name__)
@@ -25,6 +30,16 @@ app.config.from_object(__name__)
 # connect to database
 db = SQLAlchemy(app)
 from project import models
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in.')
+            return jsonify({'status': 0, 'message': 'Please log in.'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 @app.route('/')
 def index():
@@ -90,15 +105,6 @@ def search():
     if query:
         return render_template('search.html', entries=entries, query=query)
     return render_template('search.html')
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Please log in.')
-            return jsonify({'status': 0, 'message': 'Please log in.'}), 401
-        return f(*args, **kwargs)
-    return decorated_function
 
 if __name__ == "__main__":
     app.run()
