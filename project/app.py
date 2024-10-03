@@ -4,6 +4,7 @@ import sqlite3
 from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort, jsonify
 import os
 from flask_sqlalchemy import SQLAlchemy
+from functools import wraps
 from dotenv import load_dotenv
 load_dotenv()
 # create and initialize a new Flask app
@@ -69,6 +70,7 @@ def logout():
 
 
 @app.route('/delete/<int:post_id>', methods=['GET'])
+@login_required
 def delete_entry(post_id):
     """Deletes post from database."""
     result = {'status': 0, 'message': 'Error'}
@@ -88,6 +90,15 @@ def search():
     if query:
         return render_template('search.html', entries=entries, query=query)
     return render_template('search.html')
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in.')
+            return jsonify({'status': 0, 'message': 'Please log in.'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 if __name__ == "__main__":
     app.run()
