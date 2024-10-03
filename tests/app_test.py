@@ -13,11 +13,10 @@ def client():
     app.config["TESTING"] = True
     app.config["DATABASE"] = BASE_DIR.joinpath(TEST_DB)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR.joinpath(TEST_DB)}"
-    print(app.config["SQLALCHEMY_DATABASE_URI"])
     with app.app_context():
         db.create_all()  # setup
         yield app.test_client()  # tests run here
-        #db.drop_all()  # teardown
+        db.drop_all()  # teardown
 
 
 def login(client, username, password):
@@ -80,3 +79,25 @@ def test_delete_message(client):
     rv = client.get('/delete/1')
     data = json.loads(rv.data)
     assert data["status"] == 1
+    
+    
+def test_search_one_in_two(client):
+    """Ensure that messages can be searched"""
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    client.post(
+        "/add",
+        data=dict(title="<do not search me>", text="123"),
+        follow_redirects=True,
+    )
+    client.post(
+        "/add",
+        data=dict(title="<search me>", text="abc"),
+        follow_redirects=True,
+    )
+    rv = client.get(
+        "/search/?query=abc",
+        follow_redirects=True,
+    )
+
+    assert b"123" not in rv.data
+    assert b"abc" in rv.data
